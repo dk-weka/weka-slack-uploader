@@ -68,7 +68,7 @@ echo "" >> "$REPORT_FILE"
 echo "--- CLUSTER SUMMARY ---" >> "$REPORT_FILE"
 echo "Total Filesystem Used: $(fmt_bytes $TOTAL_FS_USED) / $(fmt_bytes $TOTAL_FS_CAPACITY)" >> "$REPORT_FILE"
 echo "Sum of Quota Usage:    $(fmt_bytes $TOTAL_QUOTA_USED)" >> "$REPORT_FILE"
-echo "Total Snapshot Data:   $(fmt_bytes $SNAPSHOT_OVERHEAD) (Data not in any Active FS ~ Estimate)" >> "$REPORT_FILE"
+echo "Total Snapshot Data:   $(fmt_bytes $SNAPSHOT_OVERHEAD) (...not in any Active FS ~ Estimate)" >> "$REPORT_FILE"
 echo "-----------------------" >> "$REPORT_FILE"
 
 # 4. Per-Filesystem Reports
@@ -120,7 +120,7 @@ echo "$FS_JSON" | jq -r '.[].name' | while read FS_NAME; do
     echo "--- Summary ---" >> "$REPORT_FILE"
     echo "Used: $(fmt_bytes $THIS_USED) / $(fmt_bytes $THIS_CAP) ($THIS_PCT%)" >> "$REPORT_FILE"
     echo "Quota Sum: $(fmt_bytes $THIS_Q_USED)" >> "$REPORT_FILE"
-    echo "Snap Data: $(fmt_bytes $THIS_SNAP_OVERHEAD) (Data not in Active FS ~ Estimate)" >> "$REPORT_FILE"
+    echo "Snap Data: $(fmt_bytes $THIS_SNAP_OVERHEAD) (...not in Active FS ~ Estimate)" >> "$REPORT_FILE"
     echo "Snapshots: $THIS_SNAP_COUNT" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
 
