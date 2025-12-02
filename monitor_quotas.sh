@@ -40,7 +40,7 @@ QUOTA_JSON=$(weka fs quota list --all --json)
 FS_JSON=$(weka fs --json)
 SNAPSHOT_JSON=$(weka fs snapshot -J)
 
-# 2. Calculations (Bytes)
+# 2. Calculations (Global)
 # Sum of all 'total_bytes' in quotas
 TOTAL_QUOTA_USED=$(echo "$QUOTA_JSON" | jq '[.[] | .total_bytes] | add // 0')
 # Sum of 'used_total' across all filesystems
@@ -48,60 +48,110 @@ TOTAL_FS_USED=$(echo "$FS_JSON" | jq '[.[] | .used_total] | add // 0')
 # Sum of 'total_budget' across all filesystems
 TOTAL_FS_CAPACITY=$(echo "$FS_JSON" | jq '[.[] | .total_budget] | add // 0')
 
-# Snapshot Overhead (FS Used - Quota Used)
+# Global Snapshot Overhead
 TOTAL_QUOTA_USED=${TOTAL_QUOTA_USED:-0}
 TOTAL_FS_USED=${TOTAL_FS_USED:-0}
 SNAPSHOT_OVERHEAD=$((TOTAL_FS_USED - TOTAL_QUOTA_USED))
-
-# Calculate Usage Percentage
-if [ "$TOTAL_FS_CAPACITY" -gt 0 ]; then
-    USAGE_PERCENT=$(( 100 * TOTAL_FS_USED / TOTAL_FS_CAPACITY ))
-else
-    USAGE_PERCENT=0
-fi
 
 # Helper to format bytes (IEC standard)
 fmt_bytes() {
     numfmt --to=iec --suffix=B "$1"
 }
 
-# 3. Generate Report Header
+# 3. Generate Report Header (Global)
 echo "========================================" > "$REPORT_FILE"
 echo " WEKA Quota & Snapshot Report" >> "$REPORT_FILE"
 echo " Cluster: $(weka status | grep 'cluster' | awk '{print $2}')" >> "$REPORT_FILE"
 echo " Date:    $DATE_STR" >> "$REPORT_FILE"
 echo "========================================" >> "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
-
-echo "--- Snapshot Summary per Filesystem ---" >> "$REPORT_FILE"
-if [ -n "$SNAPSHOT_JSON" ]; then
-    echo "$SNAPSHOT_JSON" | jq -r '.[] | .filesystem' | sort | uniq -c | while read count fs; do
-        echo "Filesystem: $fs | Snapshots: $count" >> "$REPORT_FILE"
-    done
-else
-    echo "No snapshots found." >> "$REPORT_FILE"
-fi
-echo "---------------------------------------" >> "$REPORT_FILE"
-echo "" >> "$REPORT_FILE"
-
-echo "--- SUMMARY ---" >> "$REPORT_FILE"
-echo "Total Filesystem Used: $(fmt_bytes $TOTAL_FS_USED) / $(fmt_bytes $TOTAL_FS_CAPACITY) ($USAGE_PERCENT%)" >> "$REPORT_FILE"
+echo "--- CLUSTER SUMMARY ---" >> "$REPORT_FILE"
+echo "Total Filesystem Used: $(fmt_bytes $TOTAL_FS_USED) / $(fmt_bytes $TOTAL_FS_CAPACITY)" >> "$REPORT_FILE"
 echo "Sum of Quota Usage:    $(fmt_bytes $TOTAL_QUOTA_USED)" >> "$REPORT_FILE"
-echo "Est. Snapshot Data:    $(fmt_bytes $SNAPSHOT_OVERHEAD) (Excl. Active FS)" >> "$REPORT_FILE"
-echo "-------------------" >> "$REPORT_FILE"
-echo "" >> "$REPORT_FILE"
+echo "Total Snapshot Data:   $(fmt_bytes $SNAPSHOT_OVERHEAD) (Excl. Active FS)" >> "$REPORT_FILE"
+echo "-----------------------" >> "$REPORT_FILE"
 
-# 4. Append Detailed Lists
-echo "--- Detailed Quota List ---" >> "$REPORT_FILE"
-# UPDATED: Added --all
-weka fs quota list --all >> "$REPORT_FILE"
+# 4. Per-Filesystem Reports
 echo "" >> "$REPORT_FILE"
-echo "--- Filesystem List ---" >> "$REPORT_FILE"
-# UPDATED: Changed to weka fs
-weka fs >> "$REPORT_FILE"
-echo "" >> "$REPORT_FILE"
-echo "--- Detailed Snapshot List ---" >> "$REPORT_FILE"
-weka fs snapshot >> "$REPORT_FILE"
+echo "========================================" >> "$REPORT_FILE"
+echo " DETAILED FILESYSTEM REPORTS" >> "$REPORT_FILE"
+echo "========================================" >> "$REPORT_FILE"
+
+# Iterate over each filesystem name
+echo "$FS_JSON" | jq -r '.[].name' | while read FS_NAME; do
+    echo "" >> "$REPORT_FILE"
+    echo "########################################" >> "$REPORT_FILE"
+    echo " FILESYSTEM: $FS_NAME" >> "$REPORT_FILE"
+    echo "########################################" >> "$REPORT_FILE"
+
+    # Filter Data for this FS
+    # FS Data: Select the object where .name matches
+    THIS_FS_DATA=$(echo "$FS_JSON" | jq --arg fs "$FS_NAME" '.[] | select(.name == $fs)')
+    # Quotas: Select objects where .fsName matches
+    THIS_FS_QUOTAS=$(echo "$QUOTA_JSON" | jq --arg fs "$FS_NAME" '[.[] | select(.fsName == $fs)]')
+    # Snapshots: Select objects where .filesystem matches
+    THIS_FS_SNAPSHOTS=$(echo "$SNAPSHOT_JSON" | jq --arg fs "$FS_NAME" '[.[] | select(.filesystem == $fs)]')
+
+    # --- Calculations ---
+    # FS Usage/Cap
+    THIS_USED=$(echo "$THIS_FS_DATA" | jq -r '.used_total // 0')
+    THIS_CAP=$(echo "$THIS_FS_DATA" | jq -r '.total_budget // 0')
+    
+    # Quota Sum
+    THIS_Q_USED=$(echo "$THIS_FS_QUOTAS" | jq '[.[] | .total_bytes] | add // 0')
+
+    # Snapshot Count
+    THIS_SNAP_COUNT=$(echo "$THIS_FS_SNAPSHOTS" | jq 'length')
+
+    # Overhead
+    THIS_USED=${THIS_USED:-0}
+    THIS_CAP=${THIS_CAP:-0}
+    THIS_Q_USED=${THIS_Q_USED:-0}
+    THIS_SNAP_OVERHEAD=$((THIS_USED - THIS_Q_USED))
+
+    # Percentage
+    if [ "$THIS_CAP" -gt 0 ]; then
+        THIS_PCT=$(( 100 * THIS_USED / THIS_CAP ))
+    else
+        THIS_PCT=0
+    fi
+
+    # --- Section Summary ---
+    echo "--- Summary ---" >> "$REPORT_FILE"
+    echo "Used: $(fmt_bytes $THIS_USED) / $(fmt_bytes $THIS_CAP) ($THIS_PCT%)" >> "$REPORT_FILE"
+    echo "Quota Sum: $(fmt_bytes $THIS_Q_USED)" >> "$REPORT_FILE"
+    echo "Snap Data: $(fmt_bytes $THIS_SNAP_OVERHEAD) (Est)" >> "$REPORT_FILE"
+    echo "Snapshots: $THIS_SNAP_COUNT" >> "$REPORT_FILE"
+    echo "" >> "$REPORT_FILE"
+
+    # --- Detailed Quota List ---
+    echo "--- Quotas ---" >> "$REPORT_FILE"
+    # Parse jq to text table: ID | Path | Used | Hard Limit
+    # Note: Using -r to output raw text, tsv for tab separation
+    echo "$THIS_FS_QUOTAS" | jq -r '.[] | "\(.quota_id) \(.path) \(.total_bytes) \(.hard_limit_bytes)"' | while read qid path used limit; do
+        if [ -n "$qid" ]; then
+            echo "ID: $qid | Path: $path | Used: $(fmt_bytes $used) | Limit: $(fmt_bytes $limit)" >> "$REPORT_FILE"
+        fi
+    done
+    # If empty, say so
+    if [ "$THIS_Q_USED" -eq 0 ] && [ "$(echo "$THIS_FS_QUOTAS" | jq length)" -eq 0 ]; then
+        echo "(No quotas configured)" >> "$REPORT_FILE"
+    fi
+    echo "" >> "$REPORT_FILE"
+
+    # --- Detailed Snapshot List ---
+    echo "--- Snapshots ---" >> "$REPORT_FILE"
+    # Parse jq: Name | Created | Access Point
+    echo "$THIS_FS_SNAPSHOTS" | jq -r '.[] | "\(.name) \(.creationTime) \(.accessPoint)"' | while read sname created access; do
+        if [ -n "$sname" ]; then
+            echo "Name: $sname | Created: $created | Access: $access" >> "$REPORT_FILE"
+        fi
+    done
+    if [ "$THIS_SNAP_COUNT" -eq 0 ]; then
+        echo "(No snapshots)" >> "$REPORT_FILE"
+    fi
+    echo "----------------------------------------" >> "$REPORT_FILE"
+done
 
 echo "Report generated: $REPORT_FILE"
 
