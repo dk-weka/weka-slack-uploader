@@ -126,28 +126,20 @@ echo "$FS_JSON" | jq -r '.[].name' | while read FS_NAME; do
 
     # --- Detailed Quota List ---
     echo "--- Quotas ---" >> "$REPORT_FILE"
-    # Parse jq to text table: ID | Path | Used | Hard Limit
-    # Note: Using -r to output raw text, tsv for tab separation
-    echo "$THIS_FS_QUOTAS" | jq -r '.[] | "\(.quota_id) \(.path) \(.total_bytes) \(.hard_limit_bytes)"' | while read qid path used limit; do
-        if [ -n "$qid" ]; then
-            echo "ID: $qid | Path: $path | Used: $(fmt_bytes $used) | Limit: $(fmt_bytes $limit)" >> "$REPORT_FILE"
-        fi
-    done
-    # If empty, say so
-    if [ "$THIS_Q_USED" -eq 0 ] && [ "$(echo "$THIS_FS_QUOTAS" | jq length)" -eq 0 ]; then
+    QUOTA_OUTPUT=$(weka fs quota list --all "$FS_NAME" 2>&1)
+    if [ $? -eq 0 ] && [ -n "$QUOTA_OUTPUT" ]; then
+        echo "$QUOTA_OUTPUT" >> "$REPORT_FILE"
+    else
         echo "(No quotas configured)" >> "$REPORT_FILE"
     fi
     echo "" >> "$REPORT_FILE"
 
     # --- Detailed Snapshot List ---
     echo "--- Snapshots ---" >> "$REPORT_FILE"
-    # Parse jq: Name | Created | Access Point
-    echo "$THIS_FS_SNAPSHOTS" | jq -r '.[] | "\(.name) \(.creationTime) \(.accessPoint)"' | while read sname created access; do
-        if [ -n "$sname" ]; then
-            echo "Name: $sname | Created: $created | Access: $access" >> "$REPORT_FILE"
-        fi
-    done
-    if [ "$THIS_SNAP_COUNT" -eq 0 ]; then
+    SNAPSHOT_OUTPUT=$(weka fs snapshot --filter "filesystem_name eq $FS_NAME" 2>&1)
+    if [ $? -eq 0 ] && [ -n "$SNAPSHOT_OUTPUT" ]; then
+        echo "$SNAPSHOT_OUTPUT" >> "$REPORT_FILE"
+    else
         echo "(No snapshots)" >> "$REPORT_FILE"
     fi
     echo "----------------------------------------" >> "$REPORT_FILE"
