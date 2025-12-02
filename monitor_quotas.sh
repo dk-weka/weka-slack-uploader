@@ -121,7 +121,13 @@ echo "$FS_JSON" | jq -r '.[].name' | while read FS_NAME; do
     echo "--- Summary ---" >> "$REPORT_FILE"
     echo "Used: $(fmt_bytes $THIS_USED) / $(fmt_bytes $THIS_CAP) ($THIS_PCT%)" >> "$REPORT_FILE"
     echo "Quota Sum: $(fmt_bytes $THIS_Q_USED)" >> "$REPORT_FILE"
-    echo "Snap Data: $(fmt_bytes $THIS_SNAP_OVERHEAD) (...not in Active FS ~ Estimate)" >> "$REPORT_FILE"
+    
+    if [ "$THIS_SNAP_COUNT" -gt 0 ]; then
+        echo "Snap Data: $(fmt_bytes $THIS_SNAP_OVERHEAD) (...not in Active FS ~ Estimate)" >> "$REPORT_FILE"
+    else
+        echo "FS Overhead: $(fmt_bytes $THIS_SNAP_OVERHEAD)" >> "$REPORT_FILE"
+    fi
+    
     echo "Snapshots: $THIS_SNAP_COUNT" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
 
