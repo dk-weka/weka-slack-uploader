@@ -25,7 +25,7 @@
     ```bash
     weka user add WekaSlackBot readonly --password <SECURE_PASSWORD>
     # Login and save token to a specific file
-    weka user login WekaSlackBot <SECURE_PASSWORD> --path /opt/WekaSlackBot/auth-token.json
+    weka user login WekaSlackBot --path /opt/WekaSlackBot/auth-token.json
     ```
     
 3. **Secure the Token:**
