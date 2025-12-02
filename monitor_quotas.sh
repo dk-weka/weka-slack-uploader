@@ -40,14 +40,24 @@ QUOTA_JSON=$(weka fs quota list --all --json)
 FS_JSON=$(weka fs --json)
 
 # 2. Calculations (Bytes)
-# Sum of all 'used_bytes' in quotas
-TOTAL_QUOTA_USED=$(echo "$QUOTA_JSON" | jq '[.[] | .used_bytes] | add // 0')
-# Sum of 'used_total_bytes' across all filesystems
-TOTAL_FS_USED=$(echo "$FS_JSON" | jq '[.[] | .used_total_bytes] | add // 0')
+# Sum of all 'total_bytes' in quotas
+TOTAL_QUOTA_USED=$(echo "$QUOTA_JSON" | jq '[.[] | .total_bytes] | add // 0')
+# Sum of 'used_total' across all filesystems
+TOTAL_FS_USED=$(echo "$FS_JSON" | jq '[.[] | .used_total] | add // 0')
+# Sum of 'total_budget' across all filesystems
+TOTAL_FS_CAPACITY=$(echo "$FS_JSON" | jq '[.[] | .total_budget] | add // 0')
+
 # Snapshot Overhead (FS Used - Quota Used)
 TOTAL_QUOTA_USED=${TOTAL_QUOTA_USED:-0}
 TOTAL_FS_USED=${TOTAL_FS_USED:-0}
 SNAPSHOT_OVERHEAD=$((TOTAL_FS_USED - TOTAL_QUOTA_USED))
+
+# Calculate Usage Percentage
+if [ "$TOTAL_FS_CAPACITY" -gt 0 ]; then
+    USAGE_PERCENT=$(( 100 * TOTAL_FS_USED / TOTAL_FS_CAPACITY ))
+else
+    USAGE_PERCENT=0
+fi
 
 # Helper to format bytes (IEC standard)
 fmt_bytes() {
@@ -62,7 +72,7 @@ echo " Date:    $DATE_STR" >> "$REPORT_FILE"
 echo "========================================" >> "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
 echo "--- SUMMARY ---" >> "$REPORT_FILE"
-echo "Total Filesystem Used: $(fmt_bytes $TOTAL_FS_USED)" >> "$REPORT_FILE"
+echo "Total Filesystem Used: $(fmt_bytes $TOTAL_FS_USED) / $(fmt_bytes $TOTAL_FS_CAPACITY) ($USAGE_PERCENT%)" >> "$REPORT_FILE"
 echo "Sum of Quota Usage:    $(fmt_bytes $TOTAL_QUOTA_USED)" >> "$REPORT_FILE"
 echo "Est. Snapshot Data:    $(fmt_bytes $SNAPSHOT_OVERHEAD)" >> "$REPORT_FILE"
 echo "-------------------" >> "$REPORT_FILE"
