@@ -52,7 +52,21 @@
     - **Python:** Ensure `requests` is installed (`pip3 install requests` if not using apt).
 
 6. **Clone The Repo:**
-    - git clone https://github.com/dk-weka/weka-slack-uploader.git
+        # 1. Generate a new SSH deploy key specifically for this repo
+        ssh-keygen -t ed25519 -C "customer-deploy-key" -f ~/.ssh/id_ed25519_deploy -N ""
+
+        # 2. View the public key (You need to copy this output)
+        cat ~/.ssh/id_ed25519_deploy.pub
+
+        # 3. Have this key added to the github repo
+        Repo > Settings > Deploy Keys
+
+        # 4. Get the GitHub host key and append it to known_hosts
+        ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+
+        # 5. Clone the Repo
+        GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519_deploy -o IdentitiesOnly=yes" git clone git@github.com:dk-weka/weka-slack-uploader.git
+
 
 7. **Make executable:** chmod +x slack_uploader.py
 8. **Update Secrets:** Ensure `/opt/WekaSlackBot/.secrets` has `SLACK_TOKEN`, `SLACK_CHANNEL_ID`, and `SLACK_THREAD_TS`.
