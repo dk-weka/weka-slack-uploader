@@ -17,7 +17,7 @@ export WEKA_TOKEN="/opt/WekaSlackBot/auth-token.json"
 SCRIPT_DIR="$(dirname "$0")"
 UPLOADER_SCRIPT="$SCRIPT_DIR/slack_uploader.py"
 REPORT_DIR="/tmp/weka_reports"
-DATE_STR=$(TZ=America/New_York date "+%Y-%m-%d-%H:%M %Z")
+DATE_STR=$(TZ=America/New_York date "+%Y-%m-%d-%H:%M_%Z")
 REPORT_FILE="$REPORT_DIR/quota_report_${DATE_STR}.txt"
 
 # --- Prerequisites Check -----------------------------------------------------
