@@ -38,6 +38,7 @@ echo "Starting report generation for $DATE_STR..."
 # UPDATED: Added --all for quotas and changed fs list command
 QUOTA_JSON=$(weka fs quota list --all --json)
 FS_JSON=$(weka fs --json)
+SNAPSHOT_JSON=$(weka fs snapshot -J)
 
 # 2. Calculations (Bytes)
 # Sum of all 'total_bytes' in quotas
@@ -71,10 +72,22 @@ echo " Cluster: $(weka status | grep 'cluster' | awk '{print $2}')" >> "$REPORT_
 echo " Date:    $DATE_STR" >> "$REPORT_FILE"
 echo "========================================" >> "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
+
+echo "--- Snapshot Summary per Filesystem ---" >> "$REPORT_FILE"
+if [ -n "$SNAPSHOT_JSON" ]; then
+    echo "$SNAPSHOT_JSON" | jq -r '.[] | .filesystem' | sort | uniq -c | while read count fs; do
+        echo "Filesystem: $fs | Snapshots: $count" >> "$REPORT_FILE"
+    done
+else
+    echo "No snapshots found." >> "$REPORT_FILE"
+fi
+echo "---------------------------------------" >> "$REPORT_FILE"
+echo "" >> "$REPORT_FILE"
+
 echo "--- SUMMARY ---" >> "$REPORT_FILE"
 echo "Total Filesystem Used: $(fmt_bytes $TOTAL_FS_USED) / $(fmt_bytes $TOTAL_FS_CAPACITY) ($USAGE_PERCENT%)" >> "$REPORT_FILE"
 echo "Sum of Quota Usage:    $(fmt_bytes $TOTAL_QUOTA_USED)" >> "$REPORT_FILE"
-echo "Est. Snapshot Data:    $(fmt_bytes $SNAPSHOT_OVERHEAD)" >> "$REPORT_FILE"
+echo "Est. Snapshot Data:    $(fmt_bytes $SNAPSHOT_OVERHEAD) (Excl. Active FS)" >> "$REPORT_FILE"
 echo "-------------------" >> "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
 
@@ -86,6 +99,9 @@ echo "" >> "$REPORT_FILE"
 echo "--- Filesystem List ---" >> "$REPORT_FILE"
 # UPDATED: Changed to weka fs
 weka fs >> "$REPORT_FILE"
+echo "" >> "$REPORT_FILE"
+echo "--- Detailed Snapshot List ---" >> "$REPORT_FILE"
+weka fs snapshot >> "$REPORT_FILE"
 
 echo "Report generated: $REPORT_FILE"
 
