@@ -86,11 +86,11 @@ echo "$FS_JSON" | jq -r '.[].name' | while read FS_NAME; do
 
     # Filter Data for this FS
     # FS Data: Select the object where .name matches
-    THIS_FS_DATA=$(echo "$FS_JSON" | jq --arg fs "$FS_NAME" '.[] | select(.name == $fs)')
+    THIS_FS_DATA=$(echo "$FS_JSON" | jq --arg fs "$FS_NAME" '(.[] | select(.name == $fs)) // {}')
     # Quotas: Select objects where .fsName matches
-    THIS_FS_QUOTAS=$(echo "$QUOTA_JSON" | jq --arg fs "$FS_NAME" '[.[] | select(.fsName == $fs)]')
+    THIS_FS_QUOTAS=$(echo "$QUOTA_JSON" | jq --arg fs "$FS_NAME" '[.[] | select(.fsName == $fs)] // []')
     # Snapshots: Select objects where .filesystem matches
-    THIS_FS_SNAPSHOTS=$(echo "$SNAPSHOT_JSON" | jq --arg fs "$FS_NAME" '[.[] | select(.filesystem == $fs)]')
+    THIS_FS_SNAPSHOTS=$(echo "$SNAPSHOT_JSON" | jq --arg fs "$FS_NAME" '[.[] | select(.filesystem == $fs)] // []')
 
     # --- Calculations ---
     # FS Usage/Cap
@@ -100,7 +100,8 @@ echo "$FS_JSON" | jq -r '.[].name' | while read FS_NAME; do
     # Quota Sum
     THIS_Q_USED=$(echo "$THIS_FS_QUOTAS" | jq '[.[] | .total_bytes] | add // 0')
 
-    # Snapshot Count
+    # Counts
+    THIS_Q_COUNT=$(echo "$THIS_FS_QUOTAS" | jq 'length')
     THIS_SNAP_COUNT=$(echo "$THIS_FS_SNAPSHOTS" | jq 'length')
 
     # Overhead
@@ -126,9 +127,8 @@ echo "$FS_JSON" | jq -r '.[].name' | while read FS_NAME; do
 
     # --- Detailed Quota List ---
     echo "--- Quotas ---" >> "$REPORT_FILE"
-    QUOTA_OUTPUT=$(weka fs quota list --all "$FS_NAME" 2>&1)
-    if [ $? -eq 0 ] && [ -n "$QUOTA_OUTPUT" ]; then
-        echo "$QUOTA_OUTPUT" >> "$REPORT_FILE"
+    if [ "$THIS_Q_COUNT" -gt 0 ]; then
+        weka fs quota list --all "$FS_NAME" >> "$REPORT_FILE" 2>&1
     else
         echo "(No quotas configured)" >> "$REPORT_FILE"
     fi
@@ -136,9 +136,8 @@ echo "$FS_JSON" | jq -r '.[].name' | while read FS_NAME; do
 
     # --- Detailed Snapshot List ---
     echo "--- Snapshots ---" >> "$REPORT_FILE"
-    SNAPSHOT_OUTPUT=$(weka fs snapshot --filter "filesystem_name eq $FS_NAME" 2>&1)
-    if [ $? -eq 0 ] && [ -n "$SNAPSHOT_OUTPUT" ]; then
-        echo "$SNAPSHOT_OUTPUT" >> "$REPORT_FILE"
+    if [ "$THIS_SNAP_COUNT" -gt 0 ]; then
+        weka fs snapshot --filter "filesystem_name eq $FS_NAME" >> "$REPORT_FILE" 2>&1
     else
         echo "(No snapshots)" >> "$REPORT_FILE"
     fi
