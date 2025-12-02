@@ -1,0 +1,4 @@
+.secrets
+auth-token.json
+quota_report_*.txt
+__pycache__/
