@@ -43,7 +43,10 @@
     - **Python:** Ensure `requests` is installed (`pip3 install requests` if not using apt).
 
 6. **Clone The Repo:**
-    - `git clone https://github.com/dk-weka/weka-slack-uploader`
+
+    ```bash
+    git clone https://github.com/dk-weka/weka-slack-uploader
+    ```
 
 7. **Update Secrets:** Ensure `/opt/WekaSlackBot/.secrets` has `SLACK_TOKEN`, `SLACK_CHANNEL_ID`, and `SLACK_THREAD_TS`.
 8. **Update Scripts:** Copy new code to `slack_[uploader.py](http://uploader.py)` and `monitor_[quotas.sh](http://quotas.sh)`.
