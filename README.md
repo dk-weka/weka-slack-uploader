@@ -49,9 +49,8 @@
     ```
 
 7. **Update Secrets:** Ensure `/opt/WekaSlackBot/.secrets` has `SLACK_TOKEN`, `SLACK_CHANNEL_ID`, and `SLACK_THREAD_TS`.
-8. **Update Scripts:** Copy new code to `slack_[uploader.py](http://uploader.py)` and `monitor_[quotas.sh](http://quotas.sh)`.
-9. **Run:** Execute `./monitor_quotas.sh`.
-10. **Verify:** Check Slack thread for the new report (and "Also send to channel" if enabled).
+8. **Run:** Execute `./monitor_quotas.sh`.
+9. **Verify:** Check Slack thread for the new report (and "Also send to channel" if enabled).
 
 ## Scheduling (Cron)
 
