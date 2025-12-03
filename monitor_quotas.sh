@@ -153,7 +153,7 @@ echo "$FS_JSON" | jq -r '.[].name' | while IFS= read -r FS_NAME; do
     # --- Detailed Snapshot List ---
     echo "--- Snapshots ---" >> "$REPORT_FILE"
     if [ "$THIS_SNAP_COUNT" -gt 0 ]; then
-        weka fs snapshot --filter "filesystem='$FS_NAME'" >> "$REPORT_FILE" 2>&1
+        weka fs snapshot --filter "filesystem=$FS_NAME" >> "$REPORT_FILE" 2>&1
     else
         echo "(No snapshots)" >> "$REPORT_FILE"
     fi
