@@ -6,7 +6,12 @@
 
 # --- Configuration -----------------------------------------------------------
 # Source Secrets (Token, Channel, Thread)
-source /opt/WekaSlackBot/.secrets
+SECRETS_FILE="/opt/WekaSlackBot/.secrets"
+if [ ! -r "$SECRETS_FILE" ]; then
+    echo "[ERROR] Secrets file missing or unreadable: $SECRETS_FILE"
+    exit 1
+fi
+source "$SECRETS_FILE"
 
 MESSAGE_TITLE="Daily Quota Report - $(hostname)"
 
@@ -54,10 +59,14 @@ TOTAL_QUOTA_USED=${TOTAL_QUOTA_USED:-0}
 TOTAL_FS_USED=${TOTAL_FS_USED:-0}
 SNAPSHOT_OVERHEAD=$((TOTAL_FS_USED - TOTAL_QUOTA_USED))
 
-# Helper to format bytes (IEC standard)
-fmt_bytes() {
-    numfmt --to=iec --suffix=B "$1"
-}
+# Helper to format bytes (IEC standard) - Portable fallback
+if command -v numfmt > /dev/null; then
+    fmt_bytes() { numfmt --to=iec --suffix=B "$1"; }
+else
+    fmt_bytes() {
+        echo "$1" | awk '{ split("B K M G T P E", v); s=1; while($1>1024 && s<7){$1/=1024; s++} printf "%.1f%sB", $1, v[s] }'
+    }
+fi
 
 # 3. Generate Report Header (Global)
 echo "========================================" > "$REPORT_FILE"
@@ -79,7 +88,7 @@ echo " DETAILED FILESYSTEM REPORTS" >> "$REPORT_FILE"
 echo "========================================" >> "$REPORT_FILE"
 
 # Iterate over each filesystem name
-echo "$FS_JSON" | jq -r '.[].name' | while read FS_NAME; do
+echo "$FS_JSON" | jq -r '.[].name' | while IFS= read -r FS_NAME; do
     echo "" >> "$REPORT_FILE"
     echo "########################################" >> "$REPORT_FILE"
     echo " FILESYSTEM: $FS_NAME" >> "$REPORT_FILE"
@@ -144,7 +153,7 @@ echo "$FS_JSON" | jq -r '.[].name' | while read FS_NAME; do
     # --- Detailed Snapshot List ---
     echo "--- Snapshots ---" >> "$REPORT_FILE"
     if [ "$THIS_SNAP_COUNT" -gt 0 ]; then
-        weka fs snapshot --filter "filesystem=$FS_NAME" >> "$REPORT_FILE" 2>&1
+        weka fs snapshot --filter "filesystem='$FS_NAME'" >> "$REPORT_FILE" 2>&1
     else
         echo "(No snapshots)" >> "$REPORT_FILE"
     fi
