@@ -18,7 +18,6 @@ SCRIPT_DIR="$(dirname "$0")"
 UPLOADER_SCRIPT="$SCRIPT_DIR/slack_uploader.py"
 REPORT_DIR="/tmp/weka_reports"
 DATE_STR=$(TZ=America/New_York date "+%Y-%m-%d-%H:%M-%Z")
-REPORT_FILE="$REPORT_DIR/quota_report_${DATE_STR}.txt"
 
 # --- Prerequisites Check -----------------------------------------------------
 if ! command -v weka > /dev/null; then
@@ -32,7 +31,9 @@ fi
 
 # --- Execution ---------------------------------------------------------------
 mkdir -p "$REPORT_DIR"
+REPORT_FILE=$(mktemp "$REPORT_DIR/quota_report_XXXXXX.txt")
 echo "Starting report generation for $DATE_STR..."
+echo "Report file: $REPORT_FILE"
 
 # 1. Data Collection (JSON)
 # UPDATED: Added --all for quotas and changed fs list command
@@ -154,27 +155,29 @@ echo "Report generated: $REPORT_FILE"
 
 # 5. Upload to Slack
 echo "Uploading to Slack..."
+export SLACK_TOKEN
 
-# Build Command
-CMD="python3 $UPLOADER_SCRIPT -f $REPORT_FILE -t $SLACK_TOKEN -c $SLACK_CHANNEL_ID -m \"$MESSAGE_TITLE\""
+# Build Command Array (Secure)
+CMD=("python3" "$UPLOADER_SCRIPT" "-f" "$REPORT_FILE" "-c" "$SLACK_CHANNEL_ID" "-m" "$MESSAGE_TITLE")
 
 if [ -n "$SLACK_THREAD_TS" ]; then
-    CMD="$CMD --thread_ts $SLACK_THREAD_TS"
+    CMD+=("--thread_ts" "$SLACK_THREAD_TS")
 fi
 
 if [ "$SLACK_BROADCAST" == "true" ]; then
-    CMD="$CMD --broadcast"
+    CMD+=("--broadcast")
 fi
 
 # Execute
-eval $CMD
+"${CMD[@]}"
 
 if [ $? -eq 0 ]; then
     echo "Upload successful."
+    
+    # 6. Cleanup (Retention Policy: Keep last 7)
+    echo "Cleaning up old reports (keeping last 7)..."
+    ls -tp "$REPORT_DIR"/quota_report_*.txt 2>/dev/null | grep -v '/$' | tail -n +8 | xargs -I {} rm -- "{}"
 else
     echo "[ERROR] Upload failed."
     exit 1
 fi
-
-# 6. Cleanup (Optional)
-# rm "$REPORT_FILE"
