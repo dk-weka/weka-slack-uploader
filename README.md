@@ -58,12 +58,13 @@ To ensure long-term stability and traceability, follow these steps to set up aut
 
 1. **Initialize log directory**
 Create the log file directory if it doesn't already exist***
-### For Ubuntu / Debian:
+- For Ubuntu / Debian:
+
     ```bash
     sudo mkdir -p /var/log/weka
     sudo chown syslog:adm /var/log/weka
     ```
-### For RHEL / Rocky / Alma:
+- For RHEL / Rocky / Alma:
     ```bash
     sudo mkdir -p /var/log/weka
     sudo chown root:root /var/log/weka
@@ -73,7 +74,7 @@ Create the log file directory if it doesn't already exist***
     ```
 2. **Configure log rotation**
 Create a `logrotate` policy to prevent log files from exhausting disk space. `sudo vim /etc/logrotate.d/weka-slack-uploader`
-**For Ubuntu / Debian:**
+- For Ubuntu / Debian:
 
     ```bash
     /var/log/weka/slack-uploader.log {
@@ -87,7 +88,7 @@ Create a `logrotate` policy to prevent log files from exhausting disk space. `su
         create 0640 syslog syslog
     }
     ```
-**For RHEL / Rocky / Alma**
+- For RHEL / Rocky / Alma:
 
     ```bash
     /var/log/weka/slack-uploader.log {
