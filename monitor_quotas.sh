@@ -6,7 +6,7 @@
 
 # --- Configuration -----------------------------------------------------------
 # Source Secrets (Token, Channel, Thread)
-SECRETS_FILE="/opt/WekaSlackBot/.secrets"
+SECRETS_FILE="/opt/wekaslackbot/.secrets"
 if [ ! -r "$SECRETS_FILE" ]; then
     echo "[ERROR] Secrets file missing or unreadable: $SECRETS_FILE"
     exit 1
@@ -16,7 +16,7 @@ source "$SECRETS_FILE"
 MESSAGE_TITLE="Daily Quota Report - $(hostname)"
 
 # Auth Token (Use the secure path we created)
-export WEKA_TOKEN="/opt/WekaSlackBot/auth-token.json"
+export WEKA_TOKEN="/opt/wekaslackbot/auth-token.json"
 
 # Paths
 SCRIPT_DIR="$(dirname "$0")"
