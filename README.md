@@ -69,7 +69,8 @@ The script requires Python 3 with the `requests` library, `jq` for JSON parsing,
 To ensure long-term stability and traceability, follow these steps to set up automated execution with log rotation and time-stamped output.
 
 1. **Initialize log directory**
-Create the log file directory if it doesn't already exist***
+
+Create the log file directory if it doesn't already exist
     - **Ubuntu / Debian:**
 
         ```bash
@@ -87,6 +88,7 @@ Create the log file directory if it doesn't already exist***
         sudo restorecon -R -v /var/log/weka 
         ```
 2. **Configure log rotation**
+
 Create a `logrotate` policy to prevent log files from exhausting disk space. 
 - `sudo vim /etc/logrotate.d/weka-slack-uploader`
     - **Ubuntu / Debian:**
@@ -118,6 +120,7 @@ Create a `logrotate` policy to prevent log files from exhausting disk space.
         }
         ```
 3. **Add the Cron Job**
+
 Add the following entry to the root crontab to run the script every day at 8:00 AM. This captures both standard output and errors, prefixes them with a timestamp, and appends them to the log.
     - Open the crontab editor: `sudo crontab -e`
     - Add this line at the bottom:
@@ -127,6 +130,7 @@ Add the following entry to the root crontab to run the script every day at 8:00 
         ```
 
 4. **Verification**
+
 Trigger a manual run to confirm the logging chain and timestamps are functioning as expected:
 
     ```bash
