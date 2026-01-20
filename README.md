@@ -45,7 +45,7 @@
 6. **Clone The Repo:**
 
     ```bash
-    git clone https://github.com/dk-weka/weka-slack-uploader
+    git clone --depth=1 https://github.com/dk-weka/weka-slack-uploader
     ```
 
 7. **Update Secrets:** Ensure `/opt/wekaslackbot/.secrets` has `SLACK_TOKEN`, `SLACK_CHANNEL_ID`, and `SLACK_THREAD_TS`.
