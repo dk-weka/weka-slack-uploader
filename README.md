@@ -45,6 +45,7 @@
 6. **Clone The Repo:**
 
     ```bash
+    cd /opt/wekaslackbot
     git clone --depth=1 https://github.com/dk-weka/weka-slack-uploader
     ```
 
@@ -53,5 +54,66 @@
 9. **Verify:** Check Slack thread for the new report (and "Also send to channel" if enabled).
 
 ## Scheduling (Cron)
+To ensure long-term stability and traceability, follow these steps to set up automated execution with log rotation and time-stamped output.
 
-`0 9 * * * /opt/wekaslackbot/monitor_quotas.sh >> /var/log/weka_monitor.log 2>&1`
+1. **Initialize log directory**
+Create the log file directory if it doesn't already exist***
+### For Ubuntu / Debian:
+    ```bash
+    sudo mkdir -p /var/log/weka
+    sudo chown syslog:adm /var/log/weka
+    ```
+### For RHEL / Rocky / Alma:
+    ```bash
+    sudo mkdir -p /var/log/weka
+    sudo chown root:root /var/log/weka
+    # Set SELinux context for the custom log path
+    sudo semanage fcontext -a -t var_log_t "/var/log/weka(/.*)?" 2>/dev/null || true
+    sudo restorecon -R -v /var/log/weka 
+    ```
+2. **Configure log rotation**
+Create a `logrotate` policy to prevent log files from exhausting disk space. `sudo vim /etc/logrotate.d/weka-slack-uploader`
+**For Ubuntu / Debian:**
+
+    ```bash
+    /var/log/weka/slack-uploader.log {
+        rotate 30
+        size 1G
+        daily
+        missingok
+        notifempty
+        compress
+        delaycompress
+        create 0640 syslog syslog
+    }
+    ```
+**For RHEL / Rocky / Alma**
+
+    ```bash
+    /var/log/weka/slack-uploader.log {
+        rotate 30
+        size 1G
+        daily
+        missingok
+        notifempty
+        compress
+        delaycompress
+        create 0600 root root
+    }
+    ```
+3. **Add the Cron Job**
+Add the following entry to the root crontab to run the script every day at 8:00 AM. This captures both standard output and errors, prefixes them with a timestamp, and appends them to the log.
+    - Open the crontab editor: `sudo crontab -e`
+    - Add this line at the bottom:
+
+        ```bash
+        0 8 * * * /opt/wekaslackbot/weka-slack-uploader/monitor_quotas.sh 2>&1 | ts '[%Y-%m-%d %H:%M:%S]' >> /var/log/weka/slack-uploader.log
+        ```
+
+4. **Verification**
+Trigger a manual run to confirm the logging chain and timestamps are functioning as expected:
+
+    ```bash
+    sudo /opt/wekaslackbot/weka-slack-uploader/monitor_quotas.sh 2>&1 | ts '[%Y-%m-%d %H:%M:%S]' >> /var/log/weka/slack-uploader.log
+    tail -n 20 /var/log/weka/slack-uploader.log
+    ```
