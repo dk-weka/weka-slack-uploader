@@ -38,13 +38,21 @@
         ```
         
     - Secure it: `chmod 600 /opt/wekaslackbot/.secrets`
-    
-5. **Install Dependencies:**The script requires Python 3 with the `requests` library, `jq` for JSON parsing, and `moreutils` for logging timestamps.
-    - **Ubuntu**: 
-        `sudo apt install python3-requests jq moreutils -y`
-    - **RHEL/Rocky**: 
-        `sudo dnf install epel-release -y`
-        `sudo dnf install python3-requests jq moreutils -y`
+
+5. **Install Dependencies:** 
+The script requires Python 3 with the `requests` library, `jq` for JSON parsing, and `moreutils` for logging timestamps.
+    - **Ubuntu / Debian:**
+
+        ```bash
+        sudo apt install python3-requests jq moreutils -y
+        ```
+
+    - **RHEL / Rocky / Alma:**    
+
+        ```bash
+        sudo dnf install epel-release -y
+        sudo dnf install python3-requests jq moreutils -y
+        ```
 
 6. **Clone The Repo:**
 
@@ -62,14 +70,14 @@ To ensure long-term stability and traceability, follow these steps to set up aut
 
 1. **Initialize log directory**
 Create the log file directory if it doesn't already exist***
-    - For Ubuntu / Debian:
+    - **Ubuntu / Debian:**
 
         ```bash
         sudo mkdir -p /var/log/weka
         sudo chown syslog:adm /var/log/weka
         ```
 
-    - For RHEL / Rocky / Alma:
+    - **RHEL / Rocky / Alma:**
 
         ```bash
         sudo mkdir -p /var/log/weka
@@ -81,7 +89,7 @@ Create the log file directory if it doesn't already exist***
 2. **Configure log rotation**
 Create a `logrotate` policy to prevent log files from exhausting disk space. 
 - `sudo vim /etc/logrotate.d/weka-slack-uploader`
-    - For Ubuntu / Debian:
+    - **Ubuntu / Debian:**
 
         ```bash
         /var/log/weka/slack-uploader.log {
@@ -95,7 +103,7 @@ Create a `logrotate` policy to prevent log files from exhausting disk space.
             create 0640 syslog syslog
         }
         ```
-    - For RHEL / Rocky / Alma:
+    - **RHEL / Rocky / Alma:**
 
         ```bash
         /var/log/weka/slack-uploader.log {
