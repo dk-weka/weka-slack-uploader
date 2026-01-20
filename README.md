@@ -40,7 +40,7 @@
     - Secure it: `chmod 600 /opt/wekaslackbot/.secrets`
 
 5. **Install Dependencies:** 
-    The script requires Python 3 with the `requests` library, `jq` for JSON parsing, and `moreutils` for logging timestamps.
+    >The script requires Python 3 with the `requests` library, `jq` for JSON parsing, and `moreutils` for logging timestamps.
     - **Ubuntu / Debian:**
 
         ```bash
@@ -62,11 +62,11 @@
     ```
 
 7. **Update Secrets:** Ensure `/opt/wekaslackbot/.secrets` has `SLACK_TOKEN`, `SLACK_CHANNEL_ID`, and `SLACK_THREAD_TS`.
-8. **Run:** Execute `./monitor_quotas.sh`.
+8. **Run:** Execute `./weka-slack-uploader/monitor_quotas.sh`.
 9. **Verify:** Check Slack thread for the new report (and "Also send to channel" if enabled).
 
 ## Scheduling (Cron)
-To ensure long-term stability and traceability, follow these steps to set up automated execution with log rotation and time-stamped output.
+>To ensure long-term stability and traceability, follow these steps to set up automated execution with log rotation and time-stamped output.
 
 1. **Initialize log directory**
     Create the log file directory if it doesn't already exist
@@ -123,7 +123,7 @@ To ensure long-term stability and traceability, follow these steps to set up aut
     - Add this line at the bottom:
 
         ```bash
-        0 8 * * * /opt/wekaslackbot/weka-slack-uploader/monitor_quotas.sh 2>&1 | ts '[%Y-%m-%d %H:%M:%S]' >> /var/log/weka/slack-uploader.log
+        0 8 * * * /usr/bin/flock -n /var/lock/weka_monitor.lock /opt/wekaslackbot/weka-slack-uploader/monitor_quotas.sh 2>&1 | /usr/bin/ts '[\%Y-\%m-\%d \%H:\%M:\%S]' >> /var/log/weka/slack-uploader.log
         ```
 
 4. **Verification**
