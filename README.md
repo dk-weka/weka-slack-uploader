@@ -50,6 +50,7 @@
     - **RHEL / Rocky / Alma:**    
 
         ```bash
+        sudo dnf config-manager --set-enabled powertools
         sudo dnf install epel-release -y
         sudo dnf install python3-requests jq moreutils -y
         ```
